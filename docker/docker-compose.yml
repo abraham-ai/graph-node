@@ -1,6 +1,15 @@
 version: '3'
 services:
-  graph-node:
+  chain-1337:
+    environment:
+      - MNEMONIC=$MNEMONIC
+    container_name: chain-1337-test
+    image: ghcr.io/foundry-rs/foundry:nightly
+    entrypoint: 'anvil --chain-id 1337 --mnemonic "$MNEMONIC" --host 0.0.0.0 --block-time 3'
+    ports:
+      - "8547:8545"
+  graph-node-1337:
+    container_name: graph-node-1337-test
     image: graphprotocol/graph-node
     ports:
       - '8000:8000'
@@ -10,24 +19,27 @@ services:
       - '8040:8040'
     depends_on:
       - ipfs
-      - postgres
+      - postgres-1337
+      - chain-1337
     extra_hosts:
       - host.docker.internal:host-gateway
     environment:
-      postgres_host: postgres
+      postgres_host: postgres-1337
       postgres_user: graph-node
       postgres_pass: let-me-in
       postgres_db: graph-node
       ipfs: 'ipfs:5001'
-      ethereum: 'mainnet:http://host.docker.internal:8545'
+      ethereum: "mainnet:http://chain-1337:8545"
       GRAPH_LOG: info
   ipfs:
+    container_name: ipfs-test
     image: ipfs/go-ipfs:v0.10.0
     ports:
       - '5001:5001'
     volumes:
       - ./data/ipfs:/data/ipfs
-  postgres:
+  postgres-1337:
+    container_name: postgres-1337-test
     image: postgres
     ports:
       - '5432:5432'
